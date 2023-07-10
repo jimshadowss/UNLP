@@ -355,7 +355,7 @@ pub mod sistema {
         ///Delegar ownership solo puede ser llamado por el owner del contrato, y otorga ese ownership a un address dado por parametro
         #[ink(message)]
         pub fn delegar_ownership(&mut self, acc: AccountId) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.owner = Some(acc);
@@ -395,8 +395,8 @@ pub mod sistema {
         ///0 un enum con el nivel de permiso que posee el caller
         ///1 un String con el mensaje de permiso concedido
         ///2 un String con el mensaje de permiso denegado
-        /// (ambos para manejo de errores en las funciones que llaman a check_permisos)
-        fn check_permisos(&self) -> (Permiso, String, String) {
+        /// (ambos para manejo de errores en las funciones que llaman a get_permiso)
+        fn get_nivel_permiso(&self) -> (Permiso, String, String) {
             let mut permiso = Permiso::Ninguno;
             let no = "No cuenta con los permisos requeridos".to_string();
             let si = "Permiso concedido".to_string();
@@ -425,7 +425,7 @@ pub mod sistema {
         }
 
         fn set_porcentaje2(&mut self, porcentaje: u32) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.porcentaje_descuento = porcentaje;
@@ -441,7 +441,7 @@ pub mod sistema {
         }
 
         fn get_porcentaje2(&self) -> Result<u32, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => Ok(self.porcentaje_descuento),
@@ -460,7 +460,7 @@ pub mod sistema {
             &mut self,
             cantidad_pagos_consecutivos: u8,
         ) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.cantidad_pagos_consecutivos = cantidad_pagos_consecutivos;
@@ -476,7 +476,7 @@ pub mod sistema {
         }
 
         fn get_cantidad_pagos_consecutivos2(&self) -> Result<u8, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => Ok(self.cantidad_pagos_consecutivos),
@@ -489,7 +489,7 @@ pub mod sistema {
         }
 
         fn get_precio_a2(&self) -> Result<u32, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => Ok(self.precio_a),
@@ -501,7 +501,7 @@ pub mod sistema {
             self.get_precio_b2()
         }
         fn get_precio_b2(&self) -> Result<u32, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => Ok(self.precio_b),
@@ -514,7 +514,7 @@ pub mod sistema {
         }
 
         fn get_precio_c2(&self) -> Result<u32, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => Ok(self.precio_c),
@@ -526,7 +526,7 @@ pub mod sistema {
             self.set_precio_a2(precio_a)
         }
         fn set_precio_a2(&mut self, precio_a: u32) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.precio_a = precio_a;
@@ -541,7 +541,7 @@ pub mod sistema {
             self.set_precio_b2(precio_b)
         }
         fn set_precio_b2(&mut self, precio_b: u32) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.precio_b = precio_b;
@@ -556,7 +556,7 @@ pub mod sistema {
             self.set_precio_c2(precio_c)
         }
         fn set_precio_c2(&mut self, precio_c: u32) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.precio_c = precio_c;
@@ -568,7 +568,7 @@ pub mod sistema {
         ///Agregar staff solo puede ser llamado por el owner, agrega un address a la lista de staff
         #[ink(message)]
         pub fn agregar_staff(&mut self, acc: AccountId) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
                     self.staff.push(acc);
@@ -596,7 +596,7 @@ pub mod sistema {
             cat: String,
             actividad: Option<Actividades>,
         ) -> Result<String, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => {
@@ -666,7 +666,7 @@ pub mod sistema {
             self.get_proximo_pago2(dni)
         }
         fn get_proximo_pago2(&self, dni: u32) -> Result<Pago, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             let mut hecho = false;
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
@@ -749,12 +749,11 @@ pub mod sistema {
             let mut mes: usize = 1;
             let mut dias: u8 = 1;
             let mut arreglo_meses = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-            let mut res: Fecha;
+            let res: Fecha;
             let setenta_y_tres = 94_694_400_000;
             let un_dia = 86_400_000;
             let un_año = 31_536_000_000;
             let mut aux = time - setenta_y_tres;
-            let mut cont = 0;
 
             while (aux > un_año && !self.es_bisiesto(años))
                 || (aux > un_año + un_dia && self.es_bisiesto(años))
@@ -766,7 +765,7 @@ pub mod sistema {
                 }
                 años += 1;
             }
-            if cont == 4 {
+            if self.es_bisiesto(años) {
                 arreglo_meses[2] += 1;
             }
             while aux > (arreglo_meses[mes] * un_dia) {
@@ -873,7 +872,7 @@ pub mod sistema {
             self.consulta_pagos2(dni)
         }
         fn consulta_pagos2(&self, dni: Option<u32>) -> Result<Vec<Pago>, String> {
-            let res = self.check_permisos();
+            let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => {
