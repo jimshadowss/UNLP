@@ -6,7 +6,9 @@ Rust/rust/src/target/*
 Rust/rust/src/autos.json
 Rust/rust/src/canciones.json
 Rust/rust/src/Suscripciones.json
-Rust/rust/tpfinal/sistema/.history/*
+Rust/rust/tpfinal/.history/*
+Rust/rust/tpfinal/report/.history/*
+Rust/rust/tpfinal/report/sistema/.history/*
 Rust/rust/src/coverage/*
 Rust/rust/src/.history/*
 Rust/.history/*
