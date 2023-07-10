@@ -48,32 +48,54 @@ mod report {
         pub fn new(sistema: SistemaRef) -> Self {
             Self { sistema }
         }
-
+        #[ink(message)]
+        pub fn get_address(&self) -> AccountId {
+            self.sistema.get_address()
+        }
         #[ink(message)]
         pub fn verificacion_pagos_pendientes(&self) -> Result<Vec<Socio>, String> {
-            let res = self.sistema.consulta_pagos(None);
             let mut vec = Vec::new();
-            match res {
+            match self.sistema.verificacion_pagos_pendientes() {
                 Ok(a) => {
                     for i in a {
-                        if i.fuera_de_termino_no_pagado(self.env().block_timestamp()) {
-                            let dni = i.get_socio().dni;
-                            let nombre = i.get_socio().nombre;
-                            let categoria = match i.get_socio().categoria {
+                        let socio = Socio::new(
+                            i.dni,
+                            i.nombre,
+                            match i.categoria {
                                 sistema::sistema::Categorias::A(_) => Categorias::A,
                                 sistema::sistema::Categorias::B(_) => Categorias::B,
                                 sistema::sistema::Categorias::C(_) => Categorias::C,
-                            };
-                            let socio = Socio::new(dni, nombre, categoria);
-                            if !vec.contains(&socio) {
-                                vec.push(socio);
-                            }
-                        }
+                            },
+                        );
+                        vec.push(socio);
                     }
                     Ok(vec)
                 }
                 Err(e) => Err(e),
             }
+        }
+
+        #[ink(message)]
+        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Option<u32> {
+            self.sistema.informe_recaudacion_mensual(categoria)
+        }
+        #[ink(message)]
+        pub fn informe_socios_no_morosos_actividad(&self, actividad: String) -> Vec<Socio> {
+            let aux = self.sistema.get_no_morosos_act(actividad);
+            let mut vec = Vec::new();
+            for i in aux {
+                let socio = Socio::new(
+                    i.dni,
+                    i.nombre,
+                    match i.categoria {
+                        sistema::sistema::Categorias::A(_) => Categorias::A,
+                        sistema::sistema::Categorias::B(_) => Categorias::B,
+                        sistema::sistema::Categorias::C(_) => Categorias::C,
+                    },
+                );
+                vec.push(socio);
+            }
+            vec
         }
     }
 

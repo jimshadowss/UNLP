@@ -38,28 +38,116 @@ pub mod sistema {
     ///  (si ya fue pagado)
     pub struct Pago {
         monto: u32,
-        vencimiento: u64,
+        vencimiento: Fecha,
         socio: Socio,
         pagado: bool,
-        fecha_de_pago: Option<u64>,
+        fecha_de_pago: Option<Fecha>,
         con_descuento: bool,
     }
     ///Fecha tiene año en u16 y mes y dia en u8
-    #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
+    #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug)]
     #[cfg_attr(
         feature = "std",
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
+
     pub struct Fecha {
-        año: u16,
-        mes: u8,
-        dia: u8,
+        pub año: u16,
+        pub mes: u8,
+        pub dia: u8,
+        arreglo_meses: [u8; 13],
+    }
+    impl Clone for Fecha {
+        fn clone(&self) -> Self {
+            let año = self.año;
+            let mes = self.mes;
+            let dia = self.dia;
+            let arreglo_meses = self.arreglo_meses;
+            Self {
+                año,
+                mes,
+                dia,
+                arreglo_meses,
+            }
+        }
+    }
+    impl Default for Fecha {
+        fn default() -> Fecha {
+            let año = 0;
+            let mes = 0;
+            let dia = 0;
+            let arreglo_meses = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            Fecha {
+                año,
+                mes,
+                dia,
+                arreglo_meses,
+            }
+        }
     }
     impl Fecha {
         fn new(año: u16, mes: u8, dia: u8) -> Fecha {
-            Fecha { año, mes, dia }
+            let arreglo_meses = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+            Fecha {
+                año,
+                mes,
+                dia,
+                arreglo_meses,
+            }
+        }
+        fn es_mayor(&self, fecha: Fecha) -> bool {
+            let mut es = false;
+            if fecha.año > self.año {
+                es = true;
+            } else if fecha.año == self.año && fecha.mes > self.mes {
+                es = true;
+            } else if fecha.año == self.año && fecha.mes == self.mes && fecha.dia > self.dia {
+                es = true;
+            }
+            es
+        }
+
+        fn es_bisiesto(&self) -> bool {
+            let mut res = false;
+            if self.año % 4 == 0 && self.año % 100 != 0 {
+                res = true;
+            }
+            if self.año % 100 == 0 && self.año % 400 != 0 {
+                res = false;
+            }
+            if self.año % 100 == 0 && self.año % 400 == 0 {
+                res = true;
+            }
+            res
+        }
+
+        fn sumar_dias(&mut self, dias: usize) {
+            let mut aux = self.dia as usize;
+            aux += dias;
+            while aux > self.arreglo_meses[self.mes as usize] as usize {
+                aux -= self.arreglo_meses[self.mes as usize] as usize;
+                if self.mes == 2 && self.es_bisiesto() {
+                    aux -= 1;
+                }
+                if self.mes < 12 {
+                    self.mes += 1;
+                } else {
+                    self.mes = 1;
+                    self.año += 1;
+                }
+            }
+            self.dia = aux as u8;
+        }
+        fn sumar_meses(&mut self, meses: u8) {
+            if self.mes < 12 {
+                self.mes += meses;
+            } else {
+                self.mes = 1;
+                self.año += 1;
+            }
         }
     }
+
     ///Permiso es un enum con los niveles de permiso que tiene un address para interactuar con el contrato
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
@@ -75,10 +163,15 @@ pub mod sistema {
     impl Clone for Pago {
         fn clone(&self) -> Self {
             let monto = self.monto;
-            let vencimiento = self.vencimiento;
+            let vencimiento = self.vencimiento.clone();
             let socio = self.socio.clone();
             let pagado = self.pagado;
-            let fecha_de_pago = self.fecha_de_pago;
+            let fecha_de_pago;
+            if let Some(a) = &self.fecha_de_pago.clone() {
+                fecha_de_pago = Some(a.clone());
+            } else {
+                fecha_de_pago = None;
+            }
             let con_descuento = self.con_descuento;
             Pago {
                 monto,
@@ -93,7 +186,7 @@ pub mod sistema {
 
     impl Pago {
         ///pago se instancia sin fecha de pago y sin descuento aplicado, se verá si tiene descuento al buscarlo con getProximoPago
-        fn new(monto: u32, socio: Socio, vencimiento: u64) -> Pago {
+        fn new(monto: u32, socio: Socio, vencimiento: Fecha) -> Pago {
             let fecha_de_pago = None;
             let con_descuento = false;
             Pago {
@@ -105,10 +198,21 @@ pub mod sistema {
                 con_descuento,
             }
         }
+        pub fn get_fecha_de_pago(&self) -> Option<Fecha> {
+            self.fecha_de_pago.clone()
+        }
+        pub fn get_monto(&self) -> u32 {
+            self.monto
+        }
         ///para uso interno, checkea si el pago está fuera de termino (pagado o no)
-        fn fuera_de_termino(&self, time: u64) -> bool {
-            if (!self.pagado && time > self.vencimiento)
-                || (self.pagado && self.fecha_de_pago.unwrap() > self.vencimiento)
+        fn fuera_de_termino(&self, time: Fecha) -> bool {
+            if (!self.pagado && time.es_mayor(self.vencimiento.clone()))
+                || (self.pagado
+                    && self
+                        .fecha_de_pago
+                        .clone()
+                        .unwrap()
+                        .es_mayor(self.vencimiento.clone()))
             {
                 true
             } else {
@@ -116,8 +220,8 @@ pub mod sistema {
             }
         }
         ///para uso interno, checkea pagos pendientes ya vencidos
-        pub fn fuera_de_termino_no_pagado(&self, time: u64) -> bool {
-            if !self.pagado && time > self.vencimiento {
+        pub fn fuera_de_termino_no_pagado(&self, time: Fecha) -> bool {
+            if !self.pagado && time.es_mayor(self.vencimiento.clone()) {
                 true
             } else {
                 false
@@ -364,6 +468,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
+
         // #[allow(dead_code)]
         fn default() -> Sistema {
             let precio_a = 0;
@@ -634,7 +739,9 @@ pub mod sistema {
                                 pago = Pago::new(
                                     precio,
                                     socio.clone(),
-                                    self.env().block_timestamp() + 864_000_000,
+                                    self.timestamp_into_date(
+                                        self.env().block_timestamp() + 864_000_000,
+                                    ),
                                 );
                                 self.datos_socios.push(socio);
                                 self.registro_pagos.push(pago);
@@ -694,6 +801,131 @@ pub mod sistema {
                 }
             }
         }
+        #[ink(message)]
+        pub fn verificacion_pagos_pendientes(&self) -> Result<Vec<Socio>, String> {
+            let res = self.consulta_pagos(None);
+            let mut vec = Vec::new();
+            match res {
+                Ok(a) => {
+                    for i in a {
+                        if i.fuera_de_termino_no_pagado(
+                            self.timestamp_into_date(self.env().block_timestamp()),
+                        ) {
+                            let socio = Socio::new(
+                                i.get_socio().dni,
+                                i.get_socio().nombre,
+                                match i.get_socio().categoria {
+                                    Categorias::A(_) => Categorias::A(InfoCat::default()),
+                                    Categorias::B(_) => Categorias::B(InfoCat::default()),
+                                    Categorias::C(_) => Categorias::C(InfoCat::default()),
+                                },
+                            );
+                            if !vec.contains(&socio) {
+                                vec.push(socio);
+                            }
+                        }
+                    }
+                    Ok(vec)
+                }
+                Err(e) => Err(e),
+            }
+        }
+
+        #[ink(message)]
+        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Option<u32> {
+            let iter;
+            let mut res = 0;
+            let hoy = self.get_timestamp();
+            let cat: Categorias;
+            if categoria.eq("A") {
+                cat = Categorias::A(InfoCat::default());
+            } else if categoria.eq("B") {
+                cat = Categorias::B(InfoCat::default());
+            } else {
+                cat = Categorias::C(InfoCat::default());
+            }
+            match self.consulta_pagos(None) {
+                Ok(a) => {
+                    iter = a.iter();
+                    let check = |pago: &Pago, mes: u8, cat: &Categorias| -> bool {
+                        if let Some(a) = pago.get_fecha_de_pago() {
+                            if a.mes == mes && pago.socio.categoria.eq(&cat) {
+                                true
+                            } else {
+                                false
+                            }
+                        } else {
+                            false
+                        }
+                    };
+                    let aux: Vec<_> = iter
+                        .filter(move |x| check(x, hoy.mes, &cat))
+                        .collect::<Vec<_>>();
+                    for i in aux {
+                        res += i.get_monto()
+                    }
+                    Some(res)
+                }
+                Err(_) => None,
+            }
+        }
+        #[ink(message)]
+        pub fn get_no_morosos_act(&self, actividad: String) -> Vec<Socio> {
+            let mut act = Actividades::default();
+            if actividad.eq("Futbol") {
+                act = Actividades::Futbol
+            } else if actividad.eq("Gimnasio") {
+                act = Actividades::Gimnasio
+            } else if actividad.eq("Basquet") {
+                act = Actividades::Basquet
+            } else if actividad.eq("Rugby") {
+                act = Actividades::Rugby
+            } else if actividad.eq("Hockey") {
+                act = Actividades::Hockey
+            } else if actividad.eq("Natacion") {
+                act = Actividades::Natacion
+            } else if actividad.eq("Tenis") {
+                act = Actividades::Tenis
+            } else if actividad.eq("Paddle") {
+                act = Actividades::Paddle
+            }
+            let mut vec = Vec::new();
+            for i in &self.datos_socios {
+                match self.get_proximo_pago(i.dni) {
+                    Ok(a) => {
+                        if !a.fuera_de_termino_no_pagado(self.get_timestamp())
+                            && match &i.categoria {
+                                Categorias::A(b) => {
+                                    if b.actividades.contains(&act) {
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                                Categorias::B(b) => {
+                                    if b.actividades.contains(&act) {
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                                Categorias::C(b) => {
+                                    if b.actividades.contains(&act) {
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                }
+                            }
+                        {
+                            vec.push(i.clone());
+                        }
+                    }
+                    Err(_) => (),
+                }
+            }
+            vec
+        }
         ///si_descuento para uso interno, checkea si corresponde descuento en el proximo pago a un dni
         fn si_descuento(&self, dni: u32) -> bool {
             let mut es = false;
@@ -712,7 +944,9 @@ pub mod sistema {
             let mut i = aux.len();
             while i > 0 {
                 i -= 1;
-                if !aux[i].con_descuento && !aux[i].fuera_de_termino(self.env().block_timestamp()) {
+                let time = self.env().block_timestamp();
+                if !aux[i].con_descuento && !aux[i].fuera_de_termino(self.timestamp_into_date(time))
+                {
                     cont += 1;
                 } else {
                     break;
@@ -744,6 +978,7 @@ pub mod sistema {
             res
         }
         ///timestamp_into_date convierte un timestamp u64 en un struct Fecha
+        #[ink(message)]
         pub fn timestamp_into_date(&self, time: u64) -> Fecha {
             let mut años: u16 = 1973;
             let mut mes: usize = 1;
@@ -818,17 +1053,19 @@ pub mod sistema {
                                 Categorias::B(_) => self.precio_b,
                                 Categorias::C(_) => self.precio_c,
                             };
-                            let pago = Pago::new(
-                                monto,
-                                socio.clone(),
-                                pago_aux.vencimiento + 2_592_000_000,
+                            let mut vencimiento = Fecha::new(
+                                pago_aux.vencimiento.año,
+                                pago_aux.vencimiento.mes,
+                                pago_aux.vencimiento.dia,
                             );
+                            vencimiento.sumar_meses(1);
+                            let pago = Pago::new(monto, socio.clone(), vencimiento);
                             self.registro_pagos.push(pago);
                             pago_aux.monto =
                                 pago_aux.monto * (100 - self.porcentaje_descuento) / 100;
                             pago_aux.pagado = true;
                             pago_aux.con_descuento = true;
-                            pago_aux.fecha_de_pago = Some(timestamp);
+                            pago_aux.fecha_de_pago = Some(self.timestamp_into_date(timestamp));
                             vuelto = monto_pagado - pago_aux.monto;
                             hecho = Ok(format!(
                                 "Pago registrado exitosamente, por haber pagado sin atrasos las ultimas {} veces cuenta con un descuento del {}%, el vuelto es: {}",self.cantidad_pagos_consecutivos,self.porcentaje_descuento,
@@ -840,14 +1077,16 @@ pub mod sistema {
                                 Categorias::B(_) => self.precio_b,
                                 Categorias::C(_) => self.precio_c,
                             };
-                            let pago = Pago::new(
-                                monto,
-                                socio.clone(),
-                                pago_aux.vencimiento + 2_592_000_000,
+                            let mut vencimiento = Fecha::new(
+                                pago_aux.vencimiento.año,
+                                pago_aux.vencimiento.mes,
+                                pago_aux.vencimiento.dia,
                             );
+                            vencimiento.sumar_meses(1);
+                            let pago = Pago::new(monto, socio.clone(), vencimiento);
                             self.registro_pagos.push(pago);
                             pago_aux.pagado = true;
-                            pago_aux.fecha_de_pago = Some(timestamp);
+                            pago_aux.fecha_de_pago = Some(self.timestamp_into_date(timestamp));
                             vuelto = monto_pagado - pago_aux.monto;
                             hecho = Ok(format!(
                                 "Pago registrado exitosamente, el vuelto es: {}",
@@ -918,7 +1157,7 @@ pub mod sistema {
         #[ink::test]
         fn new_pago_test() {
             let monto = 0;
-            let vencimiento = 0;
+            let mut venc = Fecha::default();
             let socio = Socio::default();
             let pagado = false;
             let pago = Pago::new(monto, socio.clone(), vencimiento);
@@ -1358,7 +1597,7 @@ pub mod sistema {
             let mut sis = Sistema::default();
             sis.set_cantidad_pagos_consecutivos(2);
             let dni = 1;
-            let mut venc = 0;
+            let mut venc = Fecha::default();
             let nombre = "a".to_string();
             let categoria = "A".to_string();
             let actividad = None;
@@ -1373,7 +1612,10 @@ pub mod sistema {
             }
 
             assert!(
-                sis.get_proximo_pago(dni).unwrap().vencimiento >= venc
+                sis.get_proximo_pago(dni)
+                    .unwrap()
+                    .vencimiento
+                    .es_mayor_o_igual(&venc)
                     && sis.registro_pagos.len() == 3
             )
         }
@@ -1415,7 +1657,7 @@ pub mod sistema {
             let mut sis = Sistema::default();
             sis.set_cantidad_pagos_consecutivos(1);
             let dni = 1;
-            let mut venc = 0;
+            let mut venc = Fecha::default();
             let nombre = "a".to_string();
             let categoria = "A".to_string();
             let actividad = None;
@@ -1430,7 +1672,10 @@ pub mod sistema {
             }
 
             assert!(
-                sis.get_proximo_pago(dni).unwrap().vencimiento >= venc
+                sis.get_proximo_pago(dni)
+                    .unwrap()
+                    .vencimiento
+                    .es_mayor(&venc)
                     && sis.registro_pagos.len() == 3
                     && sis.registro_pagos[1].con_descuento == true
             )
@@ -1474,14 +1719,63 @@ pub mod sistema {
                 sis.set_precio_a(2000);
                 if let Ok(_) = sis.registrar_pago(dni, 2000) {
                     assert!(
-                        sis.registro_pagos[1].vencimiento
-                            >= sis.registro_pagos[0].vencimiento + 2_592_000_000
-                            && sis.registro_pagos[1].vencimiento
-                                < sis.registro_pagos[0].vencimiento + 2_592_060_000
+                        let mut aux = sis.registro_pago[0].vencimiento.sumar_dias(30) ;
+                        sis.registro_pagos[1].vencimiento.es_mayor_o_igual(&aux)
+                            && !sis.registro_pagos[1].vencimiento.es_mayor(&aux)
+                            //    < sis.registro_pagos[0].vencimiento + 2_592_060_000
                     )
                 }
             }
         }
+
+        #[ink::test]
+
+        fn registrar_pago_test7() {
+            let mut sis = Sistema::default();
+            sis.set_cantidad_pagos_consecutivos(2);
+            let dni = 2;
+            let mut venc = Fecha::default();
+            let nombre = "b".to_string();
+            let categoria = "B".to_string();
+            let actividad = Some(Actividades::Futbol);
+            let mut esta = false;
+            if let Ok(_) =
+                sis.agregar_socio(dni, nombre.clone(), categoria.clone(), actividad.clone())
+            {
+                for i in &self.datos_socios {
+                    if i.dni == dni {
+                        esta = true;
+                        break;
+                    }
+                }
+                assert!(esta == true)
+            }
+        }
+
+        #[ink::test]
+
+        fn registrar_pago_test8() {
+            let mut sis = Sistema::default();
+            sis.set_cantidad_pagos_consecutivos(2);
+            let dni = 2;
+            let mut venc = Fecha::default();
+            let nombre = "c".to_string();
+            let categoria = "C".to_string();
+            let actividad = None;
+            let mut esta = false;
+            if let Ok(_) =
+                sis.agregar_socio(dni, nombre.clone(), categoria.clone(), actividad.clone())
+            {
+                for i in &self.datos_socios {
+                    if i.dni == dni {
+                        esta = true;
+                        break;
+                    }
+                }
+                assert!(esta == true)
+            }
+        }
+
         #[ink::test]
         fn si_descuento_test() {
             let mut sis = Sistema::default();
@@ -1500,7 +1794,7 @@ pub mod sistema {
         #[ink::test]
         fn si_descuento_test2() {
             let mut sis = Sistema::default();
-            sis.set_cantidad_pagos_consecutivos(2);
+            sis.set_cantidad_pagos_consecutivos(3);
             let dni = 1;
             let nombre = "a".to_string();
             let categoria = "A".to_string();
@@ -1604,36 +1898,116 @@ pub mod sistema {
         /*------------------------------------------------------- */
         use ink::codegen::Env;
         #[ink::test]
-        fn check_permisos_test() {
+        fn get_nivel_permiso_test() {
             let mut sis = Sistema::default();
             sis.permisos_privados = true;
-            let res = sis.check_permisos();
+            let res = sis.get_nivel_permiso();
             assert!(match res.0 {
                 Permiso::Ninguno => true,
                 _ => false,
             })
         }
         #[ink::test]
-        fn check_permisos_test2() {
+        fn get_nivel_permiso_test2() {
             let mut sis = Sistema::default();
             sis.staff.push(sis.env().caller());
             sis.permisos_privados = true;
-            let res = sis.check_permisos();
+            let res = sis.get_nivel_permiso();
             assert!(match res.0 {
                 Permiso::Staff => true,
                 _ => false,
             })
         }
         #[ink::test]
-        fn check_permisos_test3() {
+        fn get_nivel_permiso_test3() {
             let mut sis = Sistema::default();
             sis.set_owner();
             sis.permisos_privados = true;
-            let res = sis.check_permisos();
+            let res = sis.get_nivel_permiso();
             assert!(match res.0 {
                 Permiso::Owner => true,
                 _ => false,
             })
+        }
+
+        #[ink::test]
+        fn es_fecha_valida_test() {
+            let fecha = Fecha::new(2016, 1, 1);
+            assert_eq!(fecha.es_fecha_valida() == true)
+        }
+
+        #[ink::test]
+        fn es_fecha_valida_test2() {
+            let fecha = Fecha::new(2016, 1, 32);
+            assert_eq!(fecha.es_fecha_valida() == false)
+        }
+
+        #[ink::test]
+        fn es_bisiesto_test() {
+            let fecha = Fecha::new(2012, 1, 1);
+            assert_eq!(fecha.es_bisiesto() == true)
+        }
+
+        #[ink::test]
+        fn es_bisiesto_test2() {
+            let fecha = Fecha::new(2013, 1, 1);
+            assert_eq!(fecha.es_bisiesto() == false)
+        }
+
+        #[ink::test]
+        fn es_mayor_test() {
+            let fecha = Fecha::new(2012, 1, 1);
+            let fecha2 = Fecha::new(2012, 1, 2);
+            assert_eq!(fecha.es_mayor(&fecha2) == false)
+        }
+
+        #[ink::test]
+        fn es_mayor_test2() {
+            let fecha = Fecha::new(2012, 2, 1);
+            let fecha2 = Fecha::new(2012, 1, 2);
+            assert_eq!(fecha.es_mayor(&fecha2) == true)
+        }
+
+        #[ink::test]
+        fn es_mayor_o_igual_test() {
+            let fecha = Fecha::new(2012, 1, 1);
+            let fecha2 = Fecha::new(2012, 1, 1);
+            assert_eq!(fecha.es_mayor_o_igual(&fecha2) == true)
+        }
+
+        #[ink::test]
+        fn es_mayor_o_igual_test2() {
+            let fecha = Fecha::new(2012, 1, 1);
+            let fecha2 = Fecha::new(2012, 1, 2);
+            assert_eq!(fecha.es_mayor_o_igual(&fecha2) == false)
+        }
+
+        #[ink::test]
+        fn es_mayor_o_igual_test3() {
+            let fecha = Fecha::new(2012, 2, 1);
+            let fecha2 = Fecha::new(2012, 1, 1);
+            assert_eq!(fecha.es_mayor_o_igual(&fecha2) == true)
+        }
+
+        #[ink::test]
+        fn sumar_dias_test() {
+            let mut fecha = Fecha::new(2012, 12, 28);
+            fecha.sumar_dias(4);
+            assert!(fecha.dia == 1 && fecha.mes == 1 && fecha.año == 2013)
+        }
+
+        #[ink::test]
+        fn sumar_dias_test2() {
+            let mut fecha = Fecha::new(2012, 12, 28);
+            fecha.sumar_dias(4);
+            assert!(fecha.dia == 1 && fecha.mes == 1 && fecha.año == 2013)
+        }
+
+        #[ink::test]
+        fn sumar_dias_test3() {
+            let mut fecha = Fecha::new(2020, 1, 1);
+            fecha.sumar_dias(365);
+            assert!(fecha.dia == 1 && fecha.mes == 1 && fecha.año == 2021)
         }
     }
 }
