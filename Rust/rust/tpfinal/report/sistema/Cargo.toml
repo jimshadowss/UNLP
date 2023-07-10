@@ -1,11 +1,7 @@
 [package]
 name = "sistema"
 version = "0.1.0"
-<<<<<<< HEAD
-authors = ["Lucas <lucase.igarzabal@gmail.com>"]
-=======
 authors = ["[your_name] <[your_email]>"]
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
 edition = "2021"
 
 [dependencies]

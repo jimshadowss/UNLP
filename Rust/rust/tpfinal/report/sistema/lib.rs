@@ -1,11 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std, no_main)]
 pub use self::sistema::SistemaRef;
 #[ink::contract]
-<<<<<<< HEAD
-mod sistema {
-=======
 pub mod sistema {
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
     use ink::prelude::format;
     use ink::prelude::string::String;
     use ink::prelude::string::ToString;
@@ -48,9 +44,6 @@ pub mod sistema {
         fecha_de_pago: Option<u64>,
         con_descuento: bool,
     }
-<<<<<<< HEAD
-    pub enum Permiso {
-=======
     ///Fecha tiene año en u16 y mes y dia en u8
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
@@ -75,7 +68,6 @@ pub mod sistema {
     )]
     pub enum Permiso {
         #[default]
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         Owner,
         Staff,
         Ninguno,
@@ -123,10 +115,7 @@ pub mod sistema {
                 false
             }
         }
-<<<<<<< HEAD
-=======
         ///para uso interno, checkea pagos pendientes ya vencidos
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         pub fn fuera_de_termino_no_pagado(&self, time: u64) -> bool {
             if !self.pagado && time > self.vencimiento {
                 true
@@ -333,10 +322,7 @@ pub mod sistema {
             sis.set_owner();
             sis
         }
-<<<<<<< HEAD
-=======
         ///new2 es para uso interno, éste es el verdadero constructor, privado, llamado por el new publico, para que luego desde new se pueda llamar a set_owner para asi guardar el owner desde el momento de instanciar el contrato (no es posible llamar a self.env() si no se cuenta con un self)
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         fn new2(
             precio_a: u32,
             precio_b: u32,
@@ -362,10 +348,7 @@ pub mod sistema {
                 permisos_privados,
             }
         }
-<<<<<<< HEAD
-=======
         ///set_owner para uso interno, se ejecuta solo al momento de instanciar el contrato, con el address del caller
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         fn set_owner(&mut self) {
             self.owner = Some(self.env().caller());
         }
@@ -406,11 +389,8 @@ pub mod sistema {
                 permisos_privados,
             }
         }
-<<<<<<< HEAD
-=======
         ///Timestamp_into_date para uso interno, convierte un timestamp en una tupla con la fecha, formato aaaa/mm/dd
 
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         //check permisos se usa solo internamente, devuelve una tupla formada de la siguiente manera:
         ///0 un enum con el nivel de permiso que posee el caller
         ///1 un String con el mensaje de permiso concedido
@@ -714,10 +694,7 @@ pub mod sistema {
                 }
             }
         }
-<<<<<<< HEAD
-=======
         ///si_descuento para uso interno, checkea si corresponde descuento en el proximo pago a un dni
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         fn si_descuento(&self, dni: u32) -> bool {
             let mut es = false;
             let socios_iter = self.registro_pagos.iter();
@@ -750,10 +727,6 @@ pub mod sistema {
         }
         ///todos pueden llamar a get_timestamp, muestra el timestamp actual
         #[ink(message)]
-<<<<<<< HEAD
-        pub fn get_timestamp(&self) -> u64 {
-            self.env().block_timestamp()
-=======
         pub fn get_timestamp(&self) -> Fecha {
             self.timestamp_into_date(self.env().block_timestamp())
         }
@@ -810,7 +783,6 @@ pub mod sistema {
             }
             res = Fecha::new(años, mes as u8, dias);
             res
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         }
         ///todos pueden llamar a get_address, muestra el address del caller
         #[ink(message)]
@@ -932,25 +904,12 @@ pub mod sistema {
         }
     }
 
-<<<<<<< HEAD
-    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
-    /// module and test functions are marked with a `#[test]` attribute.
-    /// The below code is technically just normal Rust code.
-    #[cfg(test)]
-    #[allow(unused_must_use)]
-    mod tests {
-        /// Imports all the definitions from the outer scope so we can use them here.
-        use super::*;
-
-        /// We test if the default constructor does its job.
-=======
     /// Modulo de tests
     #[cfg(test)]
     #[allow(unused_must_use)]
     mod tests {
         use super::*;
 
->>>>>>> 282b35cd445eb64ca64d44bc0aa73ff5a0c3c14d
         #[ink::test]
         fn pago_clone_test() {
             let pago = Pago::default();
