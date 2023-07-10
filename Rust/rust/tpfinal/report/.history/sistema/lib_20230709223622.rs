@@ -904,12 +904,16 @@ pub mod sistema {
         }
     }
 
-    /// Modulo de tests
+    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
+    /// module and test functions are marked with a `#[test]` attribute.
+    /// The below code is technically just normal Rust code.
     #[cfg(test)]
     #[allow(unused_must_use)]
     mod tests {
+        /// Imports all the definitions from the outer scope so we can use them here.
         use super::*;
 
+        /// We test if the default constructor does its job.
         #[ink::test]
         fn pago_clone_test() {
             let pago = Pago::default();

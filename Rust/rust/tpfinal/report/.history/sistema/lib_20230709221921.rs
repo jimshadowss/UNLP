@@ -44,7 +44,7 @@ pub mod sistema {
         fecha_de_pago: Option<u64>,
         con_descuento: bool,
     }
-    ///Fecha tiene año en u16 y mes y dia en u8
+
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
         feature = "std",
@@ -60,7 +60,6 @@ pub mod sistema {
             Fecha { año, mes, dia }
         }
     }
-    ///Permiso es un enum con los niveles de permiso que tiene un address para interactuar con el contrato
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
         feature = "std",
@@ -115,7 +114,6 @@ pub mod sistema {
                 false
             }
         }
-        ///para uso interno, checkea pagos pendientes ya vencidos
         pub fn fuera_de_termino_no_pagado(&self, time: u64) -> bool {
             if !self.pagado && time > self.vencimiento {
                 true
@@ -322,7 +320,6 @@ pub mod sistema {
             sis.set_owner();
             sis
         }
-        ///new2 es para uso interno, éste es el verdadero constructor, privado, llamado por el new publico, para que luego desde new se pueda llamar a set_owner para asi guardar el owner desde el momento de instanciar el contrato (no es posible llamar a self.env() si no se cuenta con un self)
         fn new2(
             precio_a: u32,
             precio_b: u32,
@@ -348,7 +345,6 @@ pub mod sistema {
                 permisos_privados,
             }
         }
-        ///set_owner para uso interno, se ejecuta solo al momento de instanciar el contrato, con el address del caller
         fn set_owner(&mut self) {
             self.owner = Some(self.env().caller());
         }
@@ -694,7 +690,6 @@ pub mod sistema {
                 }
             }
         }
-        ///si_descuento para uso interno, checkea si corresponde descuento en el proximo pago a un dni
         fn si_descuento(&self, dni: u32) -> bool {
             let mut es = false;
             let socios_iter = self.registro_pagos.iter();
@@ -727,10 +722,10 @@ pub mod sistema {
         }
         ///todos pueden llamar a get_timestamp, muestra el timestamp actual
         #[ink(message)]
-        pub fn get_timestamp(&self) -> Fecha {
+        pub fn get_timestamp(&self) -> (u32, u8, u8) {
             self.timestamp_into_date(self.env().block_timestamp())
         }
-        fn es_bisiesto(&self, año: u16) -> bool {
+        fn es_bisiesto(&self, año: u32) -> bool {
             let mut res = false;
             if año % 4 == 0 && año % 100 != 0 {
                 res = true;
@@ -743,13 +738,13 @@ pub mod sistema {
             }
             res
         }
-        ///timestamp_into_date convierte un timestamp u64 en un struct Fecha
-        pub fn timestamp_into_date(&self, time: u64) -> Fecha {
-            let mut años: u16 = 1973;
+
+        pub fn timestamp_into_date(&self, time: u64) -> (u32, u8, u8) {
+            let mut años: u32 = 1973;
             let mut mes: usize = 1;
             let mut dias: u8 = 1;
             let mut arreglo_meses = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-            let mut res: Fecha;
+            let mut res = (0, 0, 0);
             let setenta_y_tres = 94_694_400_000;
             let un_dia = 86_400_000;
             let un_año = 31_536_000_000;
@@ -781,7 +776,7 @@ pub mod sistema {
                 aux -= un_dia;
                 dias += 1;
             }
-            res = Fecha::new(años, mes as u8, dias);
+            res = (años, mes as u8, dias);
             res
         }
         ///todos pueden llamar a get_address, muestra el address del caller
@@ -904,12 +899,16 @@ pub mod sistema {
         }
     }
 
-    /// Modulo de tests
+    /// Unit tests in Rust are normally defined within such a `#[cfg(test)]`
+    /// module and test functions are marked with a `#[test]` attribute.
+    /// The below code is technically just normal Rust code.
     #[cfg(test)]
     #[allow(unused_must_use)]
     mod tests {
+        /// Imports all the definitions from the outer scope so we can use them here.
         use super::*;
 
+        /// We test if the default constructor does its job.
         #[ink::test]
         fn pago_clone_test() {
             let pago = Pago::default();
