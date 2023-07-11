@@ -46,7 +46,17 @@ mod report {
     impl Report {
         #[ink(constructor)]
         pub fn new(sistema: SistemaRef) -> Self {
-            Self { sistema }
+            let mut sis = Self { sistema };
+            let res = sis.solicitar_permiso();
+            match res {
+                Ok(_) => (),
+                Err(e) => (),
+            }
+            sis
+        }
+        #[ink(message)]
+        pub fn solicitar_permiso(&mut self) -> Result<String, String> {
+            self.sistema.solicitar_permiso(self.env().caller())
         }
         #[ink(message)]
         pub fn get_address(&self) -> AccountId {

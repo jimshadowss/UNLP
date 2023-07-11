@@ -23,9 +23,30 @@ pub mod sistema {
         precio_c: u32,
         porcentaje_descuento: u32,
         cantidad_pagos_consecutivos: u8,
-        owner: Option<AccountId>,
+        owner: Owner,
         staff: Vec<AccountId>,
         permisos_privados: bool,
+    }
+    #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
+    #[cfg_attr(
+        feature = "std",
+        derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
+    )]
+    pub struct Owner {
+        id: Option<AccountId>,
+        contract: Option<AccountId>,
+    }
+    impl Owner {
+        fn new(id: Option<AccountId>, contract: Option<AccountId>) -> Self {
+            Owner { id, contract }
+        }
+    }
+    impl Clone for Owner {
+        fn clone(&self) -> Self {
+            let id = self.id;
+            let contract = self.contract;
+            Self { id, contract }
+        }
     }
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
@@ -436,7 +457,7 @@ pub mod sistema {
         ) -> Sistema {
             let registro_pagos = Vec::new();
             let datos_socios = Vec::new();
-            let owner = None;
+            let owner = Owner::new(None, None);
             let permisos_privados = true;
             let staff = Vec::new();
             Sistema {
@@ -454,7 +475,7 @@ pub mod sistema {
         }
         ///set_owner para uso interno, se ejecuta solo al momento de instanciar el contrato, con el address del caller
         fn set_owner(&mut self) {
-            self.owner = Some(self.env().caller());
+            self.owner.id = Some(self.env().caller());
         }
         ///Delegar ownership solo puede ser llamado por el owner del contrato, y otorga ese ownership a un address dado por parametro
         #[ink(message)]
@@ -462,7 +483,7 @@ pub mod sistema {
             let res = self.get_nivel_permiso();
             match res.0 {
                 Permiso::Owner => {
-                    self.owner = Some(acc);
+                    self.owner = Owner::new(Some(acc), None);
                     Ok(res.1)
                 }
                 _ => Err(res.2),
@@ -478,7 +499,7 @@ pub mod sistema {
             let cantidad_pagos_consecutivos: u8 = 0;
             let registro_pagos = Vec::new();
             let datos_socios = Vec::new();
-            let owner = None;
+            let owner = Owner::new(None, None);
             let staff = Vec::new();
             let permisos_privados = false;
             Sistema {
@@ -505,15 +526,22 @@ pub mod sistema {
             let mut permiso = Permiso::Ninguno;
             let no = "No cuenta con los permisos requeridos".to_string();
             let si = "Permiso concedido".to_string();
+            let id = self.env().caller();
             let mut not = false;
             if self.permisos_privados {
-                if let Some(a) = self.owner {
-                    if a == self.env().caller() {
+                if let Some(a) = self.owner.id {
+                    if a == id {
                         permiso = Permiso::Owner;
                         not = true;
                     }
                 }
-                if !not && self.staff.contains(&self.env().caller()) {
+                if let Some(a) = self.owner.contract {
+                    if a == id {
+                        permiso = Permiso::Owner;
+                        not = true;
+                    }
+                }
+                if !not && self.staff.contains(&id) {
                     permiso = Permiso::Staff;
                 } else if !not {
                     permiso = Permiso::Ninguno;
@@ -522,6 +550,23 @@ pub mod sistema {
                 permiso = Permiso::Owner;
             }
             (permiso, si, no)
+        }
+        #[ink(message)]
+        pub fn get_owner(&self) -> Owner {
+            self.owner.clone()
+        }
+        #[ink(message)]
+        pub fn solicitar_permiso(&mut self, id: AccountId) -> Result<String, String> {
+            if let Some(a) = self.owner.id {
+                if self.env().is_contract(&self.env().caller()) && id == a {
+                    self.owner = Owner::new(self.owner.id, Some(self.env().caller()));
+                    Ok("Correcto".to_string())
+                } else {
+                    Err("No es contrato o no es owner".to_string())
+                }
+            } else {
+                Err("No hay owner".to_string())
+            }
         }
         ///set_porcentaje solo puede ser llamado por el owner, cambia el porcentaje de descuento para los pagos consecutivos
         #[ink(message)]
