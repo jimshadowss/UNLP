@@ -8,6 +8,7 @@ mod report {
     use sistema::SistemaRef;
 
     #[ink(storage)]
+    ///Referencia al sistema principal
     pub struct Report {
         sistema: SistemaRef,
     }
@@ -46,13 +47,7 @@ mod report {
     impl Report {
         #[ink(constructor)]
         pub fn new(sistema: SistemaRef) -> Self {
-            let mut sis = Self { sistema };
-            let res = sis.solicitar_permiso();
-            match res {
-                Ok(_) => (),
-                Err(e) => (),
-            }
-            sis
+            Self { sistema }
         }
         #[ink(message)]
         pub fn solicitar_permiso(&mut self) -> Result<String, String> {
@@ -86,26 +81,34 @@ mod report {
         }
 
         #[ink(message)]
-        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Option<u32> {
-            self.sistema.informe_recaudacion_mensual(categoria)
+        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Result<u32, String> {
+            Ok(self.sistema.informe_recaudacion_mensual(categoria)?)
         }
         #[ink(message)]
-        pub fn informe_socios_no_morosos_actividad(&self, actividad: String) -> Vec<Socio> {
+        pub fn informe_socios_no_morosos_actividad(
+            &self,
+            actividad: String,
+        ) -> Result<Vec<Socio>, String> {
             let aux = self.sistema.get_no_morosos_act(actividad);
             let mut vec = Vec::new();
-            for i in aux {
-                let socio = Socio::new(
-                    i.dni,
-                    i.nombre,
-                    match i.categoria {
-                        sistema::sistema::Categorias::A(_) => Categorias::A,
-                        sistema::sistema::Categorias::B(_) => Categorias::B,
-                        sistema::sistema::Categorias::C(_) => Categorias::C,
-                    },
-                );
-                vec.push(socio);
+            match aux {
+                Ok(a) => {
+                    for i in a {
+                        let socio = Socio::new(
+                            i.dni,
+                            i.nombre,
+                            match i.categoria {
+                                sistema::sistema::Categorias::A(_) => Categorias::A,
+                                sistema::sistema::Categorias::B(_) => Categorias::B,
+                                sistema::sistema::Categorias::C(_) => Categorias::C,
+                            },
+                        );
+                        vec.push(socio);
+                    }
+                    Ok(vec)
+                }
+                Err(e) => Err(e),
             }
-            vec
         }
     }
 

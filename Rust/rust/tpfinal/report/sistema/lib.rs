@@ -567,7 +567,7 @@ pub mod sistema {
                 Err("No hay owner".to_string())
             }
         }
-        ///set_porcentaje solo puede ser llamado por el owner, cambia el porcentaje de descuento para los pagos consecutivos
+        ///Solo puede ser llamado por el owner, cambia el porcentaje de descuento para los pagos consecutivos
         #[ink(message)]
         pub fn set_porcentaje(&mut self, porcentaje: u32) -> Result<String, String> {
             self.set_porcentaje2(porcentaje)
@@ -583,7 +583,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///get_porcentaje puede ser llamado por el staff, muestra el porcentaje de descuento para los pagos consecutivos
+        ///Puede ser llamado por el staff, muestra el porcentaje de descuento para los pagos consecutivos
         #[ink(message)]
         pub fn get_porcentaje(&self) -> Result<u32, String> {
             self.get_porcentaje2()
@@ -618,7 +618,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///get_cantidad_pagos_consecutivos puede ser llamado por el staff, muestra la cantidad de pagos consecutivos requeridos para acceder al descuento
+        ///Puede ser llamado por el staff, muestra la cantidad de pagos consecutivos requeridos para acceder al descuento
         #[ink(message)]
         pub fn get_cantidad_pagos_consecutivos(&self) -> Result<u8, String> {
             self.get_cantidad_pagos_consecutivos2()
@@ -631,7 +631,7 @@ pub mod sistema {
                 _ => Ok(self.cantidad_pagos_consecutivos),
             }
         }
-        ///get_precio_a puede ser llamado por el staff, muestra el precio de la categoria A
+        ///Puede ser llamado por el staff, muestra el precio de la categoria A
         #[ink(message)]
         pub fn get_precio_a(&self) -> Result<u32, String> {
             self.get_precio_a2()
@@ -644,7 +644,7 @@ pub mod sistema {
                 _ => Ok(self.precio_a),
             }
         }
-        ///get_precio_b puede ser llamado por el staff, muestra el precio de la categoria B
+        ///Puede ser llamado por el staff, muestra el precio de la categoria B
         #[ink(message)]
         pub fn get_precio_b(&self) -> Result<u32, String> {
             self.get_precio_b2()
@@ -656,7 +656,7 @@ pub mod sistema {
                 _ => Ok(self.precio_b),
             }
         }
-        ///get_precio_c puede ser llamado por el staff, muestra el precio de la categoria C
+        ///Puede ser llamado por el staff, muestra el precio de la categoria C
         #[ink(message)]
         pub fn get_precio_c(&self) -> Result<u32, String> {
             self.get_precio_c2()
@@ -669,7 +669,7 @@ pub mod sistema {
                 _ => Ok(self.precio_c),
             }
         }
-        ///set_precio_a solo puede ser llamado por el owner, cambia el precio de la categoria A
+        ///Solo puede ser llamado por el owner, cambia el precio de la categoria A
         #[ink(message)]
         pub fn set_precio_a(&mut self, precio_a: u32) -> Result<String, String> {
             self.set_precio_a2(precio_a)
@@ -684,7 +684,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///set_precio_b solo puede ser llamado por el owner, cambia el precio de la categoria B
+        ///Solo puede ser llamado por el owner, cambia el precio de la categoria B
         #[ink(message)]
         pub fn set_precio_b(&mut self, precio_b: u32) -> Result<String, String> {
             self.set_precio_b2(precio_b)
@@ -699,7 +699,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///set_precio_c solo puede ser llamado por el owner, cambia el precio de la categoria C
+        ///Solo puede ser llamado por el owner, cambia el precio de la categoria C
         #[ink(message)]
         pub fn set_precio_c(&mut self, precio_c: u32) -> Result<String, String> {
             self.set_precio_c2(precio_c)
@@ -714,7 +714,7 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///Agregar staff solo puede ser llamado por el owner, agrega un address a la lista de staff
+        ///Solo puede ser llamado por el owner, agrega un address a la lista de staff
         #[ink(message)]
         pub fn agregar_staff(&mut self, acc: AccountId) -> Result<String, String> {
             let res = self.get_nivel_permiso();
@@ -726,8 +726,8 @@ pub mod sistema {
                 _ => Err(res.2),
             }
         }
-        ///agregar_socio puede ser llamado por el staff, agrega un socio nuevo, requiere que sea categoria A o C sin opcion de Actividad o categoria B con una opcion de actividad
-        /// al crearlo crea tambien un nuevo pago pendiente que agrega al vector de pagos, con vencimiento a diez dias luego del momento de crear el socio
+        ///Puede ser llamado por el staff, agrega un socio nuevo, requiere que sea categoria A o C sin opcion de Actividad o categoria B con una opcion de actividad
+        /// Al crearlo crea tambien un nuevo pago pendiente que agrega al vector de pagos, con vencimiento a diez dias luego del momento de crear el socio
         #[ink(message)]
         pub fn agregar_socio(
             &mut self,
@@ -799,7 +799,7 @@ pub mod sistema {
                 }
             }
         }
-        ///get_socio es solo para uso interno, devuelve Some(socio) si se encuentra en el vector
+        ///Solo para uso interno, devuelve Some(socio) si se encuentra en el vector
         fn get_socio(&self, dni: u32) -> Option<Socio> {
             let socio: Socio;
             for i in &self.datos_socios {
@@ -810,8 +810,8 @@ pub mod sistema {
             }
             return None;
         }
-        ///get_proximo_pago puede ser llamado por el staff, muestra el proximo pago de un socio pasando su dni como argumento
-        /// aplicar para descuento por pagos consecutivos, muestra el monto con descuento y la variable con_descuento como verdadera (pero no modifica estos valores del vector, los mismos se modifican solo al momento de registrar el pago)
+        ///Puede ser llamado por el staff, muestra el proximo pago de un socio pasando su dni como argumento
+        ///En caso de aplicar para descuento por pagos consecutivos, muestra el monto con descuento y la variable con_descuento como verdadera (pero no modifica estos valores del vector, los mismos se modifican solo al momento de registrar el pago)
         #[ink(message)]
         pub fn get_proximo_pago(&self, dni: u32) -> Result<Pago, String> {
             self.get_proximo_pago2(dni)
@@ -846,27 +846,154 @@ pub mod sistema {
             }
         }
         #[ink(message)]
+        ///Puede ser llamado solo por el contract
         pub fn verificacion_pagos_pendientes(&self) -> Result<Vec<Socio>, String> {
-            let res = self.consulta_pagos(None);
-            let mut vec = Vec::new();
-            match res {
-                Ok(a) => {
-                    for i in a {
-                        if i.fuera_de_termino_no_pagado(
-                            self.timestamp_into_date(self.env().block_timestamp()),
-                        ) {
-                            let socio = Socio::new(
-                                i.get_socio().dni,
-                                i.get_socio().nombre,
-                                match i.get_socio().categoria {
-                                    Categorias::A(_) => Categorias::A(InfoCategoria::default()),
-                                    Categorias::B(_) => Categorias::B(InfoCategoria::default()),
-                                    Categorias::C(_) => Categorias::C(InfoCategoria::default()),
-                                },
-                            );
-                            if !vec.contains(&socio) {
-                                vec.push(socio);
+            match self.is_contract() {
+                Ok(_) => {
+                    let res = self.consulta_pagos(None);
+                    let mut vec = Vec::new();
+                    match res {
+                        Ok(a) => {
+                            for i in a {
+                                if i.fuera_de_termino_no_pagado(
+                                    self.timestamp_into_date(self.env().block_timestamp()),
+                                ) {
+                                    let socio = Socio::new(
+                                        i.get_socio().dni,
+                                        i.get_socio().nombre,
+                                        match i.get_socio().categoria {
+                                            Categorias::A(_) => {
+                                                Categorias::A(InfoCategoria::default())
+                                            }
+                                            Categorias::B(_) => {
+                                                Categorias::B(InfoCategoria::default())
+                                            }
+                                            Categorias::C(_) => {
+                                                Categorias::C(InfoCategoria::default())
+                                            }
+                                        },
+                                    );
+                                    if !vec.contains(&socio) {
+                                        vec.push(socio);
+                                    }
+                                }
                             }
+                            Ok(vec)
+                        }
+                        Err(e) => Err(e),
+                    }
+                }
+                Err(e) => Err(e),
+            }
+        }
+        fn is_contract(&self) -> Result<String, String> {
+            if self.env().is_contract(&self.env().caller()) {
+                Ok("Ok".to_string())
+            } else {
+                Err("No es contrato".to_string())
+            }
+        }
+
+        #[ink(message)]
+        ///Puede ser llamado solo por el contract
+        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Result<u32, String> {
+            match self.is_contract() {
+                Ok(_) => {
+                    let iter;
+                    let mut res = 0;
+                    let hoy = self.get_fecha();
+                    let cat: Categorias;
+                    if categoria.eq("A") {
+                        cat = Categorias::A(InfoCategoria::default());
+                    } else if categoria.eq("B") {
+                        cat = Categorias::B(InfoCategoria::default());
+                    } else {
+                        cat = Categorias::C(InfoCategoria::default());
+                    }
+                    match self.consulta_pagos(None) {
+                        Ok(a) => {
+                            iter = a.iter();
+                            let check = |pago: &Pago, mes: u8, cat: &Categorias| -> bool {
+                                if let Some(a) = pago.get_fecha_de_pago() {
+                                    if a.mes == mes && pago.socio.categoria.eq(&cat) {
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            };
+                            let aux: Vec<_> = iter
+                                .filter(move |x| check(x, hoy.mes, &cat))
+                                .collect::<Vec<_>>();
+                            for i in aux {
+                                res += i.get_monto()
+                            }
+                            Ok(res)
+                        }
+                        Err(e) => Err(e),
+                    }
+                }
+                Err(e) => Err(e),
+            }
+        }
+        #[ink(message)]
+        ///Puede ser llamado solo por el contract
+        pub fn get_no_morosos_act(&self, actividad: String) -> Result<Vec<Socio>, String> {
+            match self.is_contract() {
+                Ok(_) => {
+                    let mut act = Actividades::default();
+                    if actividad.eq("Futbol") {
+                        act = Actividades::Futbol
+                    } else if actividad.eq("Gimnasio") {
+                        act = Actividades::Gimnasio
+                    } else if actividad.eq("Basquet") {
+                        act = Actividades::Basquet
+                    } else if actividad.eq("Rugby") {
+                        act = Actividades::Rugby
+                    } else if actividad.eq("Hockey") {
+                        act = Actividades::Hockey
+                    } else if actividad.eq("Natacion") {
+                        act = Actividades::Natacion
+                    } else if actividad.eq("Tenis") {
+                        act = Actividades::Tenis
+                    } else if actividad.eq("Paddle") {
+                        act = Actividades::Paddle
+                    }
+                    let mut vec = Vec::new();
+                    for i in &self.datos_socios {
+                        match self.get_proximo_pago(i.dni) {
+                            Ok(a) => {
+                                if !a.fuera_de_termino_no_pagado(self.get_fecha())
+                                    && match &i.categoria {
+                                        Categorias::A(b) => {
+                                            if b.actividades.contains(&act) {
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                        Categorias::B(b) => {
+                                            if b.actividades.contains(&act) {
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                        Categorias::C(b) => {
+                                            if b.actividades.contains(&act) {
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                    }
+                                {
+                                    vec.push(i.clone());
+                                }
+                            }
+                            Err(_) => (),
                         }
                     }
                     Ok(vec)
@@ -874,103 +1001,7 @@ pub mod sistema {
                 Err(e) => Err(e),
             }
         }
-
-        #[ink(message)]
-        pub fn informe_recaudacion_mensual(&self, categoria: String) -> Option<u32> {
-            let iter;
-            let mut res = 0;
-            let hoy = self.get_timestamp();
-            let cat: Categorias;
-            if categoria.eq("A") {
-                cat = Categorias::A(InfoCategoria::default());
-            } else if categoria.eq("B") {
-                cat = Categorias::B(InfoCategoria::default());
-            } else {
-                cat = Categorias::C(InfoCategoria::default());
-            }
-            match self.consulta_pagos(None) {
-                Ok(a) => {
-                    iter = a.iter();
-                    let check = |pago: &Pago, mes: u8, cat: &Categorias| -> bool {
-                        if let Some(a) = pago.get_fecha_de_pago() {
-                            if a.mes == mes && pago.socio.categoria.eq(&cat) {
-                                true
-                            } else {
-                                false
-                            }
-                        } else {
-                            false
-                        }
-                    };
-                    let aux: Vec<_> = iter
-                        .filter(move |x| check(x, hoy.mes, &cat))
-                        .collect::<Vec<_>>();
-                    for i in aux {
-                        res += i.get_monto()
-                    }
-                    Some(res)
-                }
-                Err(_) => None,
-            }
-        }
-        #[ink(message)]
-        pub fn get_no_morosos_act(&self, actividad: String) -> Vec<Socio> {
-            let mut act = Actividades::default();
-            if actividad.eq("Futbol") {
-                act = Actividades::Futbol
-            } else if actividad.eq("Gimnasio") {
-                act = Actividades::Gimnasio
-            } else if actividad.eq("Basquet") {
-                act = Actividades::Basquet
-            } else if actividad.eq("Rugby") {
-                act = Actividades::Rugby
-            } else if actividad.eq("Hockey") {
-                act = Actividades::Hockey
-            } else if actividad.eq("Natacion") {
-                act = Actividades::Natacion
-            } else if actividad.eq("Tenis") {
-                act = Actividades::Tenis
-            } else if actividad.eq("Paddle") {
-                act = Actividades::Paddle
-            }
-            let mut vec = Vec::new();
-            for i in &self.datos_socios {
-                match self.get_proximo_pago(i.dni) {
-                    Ok(a) => {
-                        if !a.fuera_de_termino_no_pagado(self.get_timestamp())
-                            && match &i.categoria {
-                                Categorias::A(b) => {
-                                    if b.actividades.contains(&act) {
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                }
-                                Categorias::B(b) => {
-                                    if b.actividades.contains(&act) {
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                }
-                                Categorias::C(b) => {
-                                    if b.actividades.contains(&act) {
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                }
-                            }
-                        {
-                            vec.push(i.clone());
-                        }
-                    }
-                    Err(_) => (),
-                }
-            }
-            vec
-        }
-        ///si_descuento para uso interno, checkea si corresponde descuento en el proximo pago a un dni
+        ///Para uso interno, checkea si corresponde descuento en el proximo pago a un dni
         fn si_descuento(&self, dni: u32) -> bool {
             let mut es = false;
             let socios_iter = self.registro_pagos.iter();
@@ -1003,9 +1034,9 @@ pub mod sistema {
             }
             es
         }
-        ///todos pueden llamar a get_timestamp, muestra el timestamp actual
+        ///Todos pueden llamar a get_fecha, muestra la fecha actual
         #[ink(message)]
-        pub fn get_timestamp(&self) -> Fecha {
+        pub fn get_fecha(&self) -> Fecha {
             self.timestamp_into_date(self.env().block_timestamp())
         }
         fn es_bisiesto(&self, año: u16) -> bool {
@@ -1072,7 +1103,7 @@ pub mod sistema {
         pub fn get_politica(&self) -> bool {
             self.permisos_privados
         }
-        ///marcar pago pendiente como pagado, al hacerlo se crea el proximo pago 30 dias despues del que se pagó
+        ///Marcar pago pendiente como pagado, al hacerlo se crea el proximo pago 1 mes despues del que se pagó
         #[ink(message)]
         pub fn registrar_pago(&mut self, dni: u32, monto_pagado: u32) -> Result<String, String> {
             self.registrar_pago2(dni, monto_pagado)
@@ -1149,7 +1180,7 @@ pub mod sistema {
 
             hecho
         }
-        ///consultar todos los pagos de un socio con el dni, o consultar todos los pagos sin dni
+        ///Consultar todos los pagos de un socio con el dni, o consultar todos los pagos sin dni
         #[ink(message)]
         pub fn consulta_pagos(&self, dni: Option<u32>) -> Result<Vec<Pago>, String> {
             self.consulta_pagos2(dni)
