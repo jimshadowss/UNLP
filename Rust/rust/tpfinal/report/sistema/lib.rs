@@ -8,12 +8,12 @@ pub mod sistema {
     use ink::prelude::vec::Vec;
 
     /// Sistema es el struct donde se guardan los datos, el sistema mismo, tiene un registro de pagos donde se guardan los pagos realizados y los pagos pendientes de pago
-    /// tiene un vector con los datos de socios
-    /// tiene los precios de las categorias
-    /// tiene el porcentaje de descuento y cantidad de pagos consecutivos requeridos
-    /// tiene un option con el address del owner del contrato (siempre se guarda como Some(_) al instanciar con new)
-    /// tiene un vector con los addresses de los miembros del staff, que tendran algunos permisos pero no todos
-    /// y tiene como booleano si la politica de permisos esta activada o no
+    /// Tiene un vector con los datos de socios
+    /// Tiene los precios de las categorias
+    /// Tiene el porcentaje de descuento y cantidad de pagos consecutivos requeridos
+    /// Tiene un Struct Owner con un Option del address del owner y un Option del address del contrato report (siempre se guarda owner como Some(_) al instanciar con new)
+    /// Tiene un vector con los addresses de los miembros del staff, que tendran algunos permisos pero no todos
+    /// Tiene como booleano si la politica de permisos esta activada o no
     #[ink(storage)]
     pub struct Sistema {
         registro_pagos: Vec<Pago>,
@@ -54,7 +54,7 @@ pub mod sistema {
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
 
-    ///Pago cuenta con monto, fecha de vencimiento, socio asociado al pago, si
+    ///Cuenta con monto, fecha de vencimiento, socio asociado al pago, si
     ///esta pagado o no, fecha de pago (si ya fue pagado), si fue con descuento
     ///  (si ya fue pagado)
     pub struct Pago {
@@ -65,7 +65,7 @@ pub mod sistema {
         fecha_de_pago: Option<Fecha>,
         con_descuento: bool,
     }
-    ///Fecha tiene año en u16 y mes y dia en u8
+    ///Tiene año en u16 y mes y dia en u8
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug)]
     #[cfg_attr(
         feature = "std",
@@ -169,7 +169,7 @@ pub mod sistema {
         }
     }
 
-    ///Permiso es un enum con los niveles de permiso que tiene un address para interactuar con el contrato
+    ///Es un enum con los niveles de permiso que tiene un address para interactuar con el contrato
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
         feature = "std",
@@ -206,7 +206,7 @@ pub mod sistema {
     }
 
     impl Pago {
-        ///pago se instancia sin fecha de pago y sin descuento aplicado, se verá si tiene descuento al buscarlo con getProximoPago
+        ///Pago se instancia sin fecha de pago y sin descuento aplicado, se verá si tiene descuento al buscarlo con getProximoPago
         fn new(monto: u32, socio: Socio, vencimiento: Fecha) -> Pago {
             let fecha_de_pago = None;
             let con_descuento = false;
@@ -225,7 +225,7 @@ pub mod sistema {
         pub fn get_monto(&self) -> u32 {
             self.monto
         }
-        ///para uso interno, checkea si el pago está fuera de termino (pagado o no)
+        ///Para uso interno, checkea si el pago está fuera de termino (pagado o no)
         fn fuera_de_termino(&self, time: Fecha) -> bool {
             if (!self.pagado && time.es_mayor(self.vencimiento.clone()))
                 || (self.pagado
@@ -240,7 +240,7 @@ pub mod sistema {
                 false
             }
         }
-        ///para uso interno, checkea pagos pendientes ya vencidos
+        ///Para uso interno, checkea pagos pendientes ya vencidos
         pub fn fuera_de_termino_no_pagado(&self, time: Fecha) -> bool {
             if !self.pagado && time.es_mayor(self.vencimiento.clone()) {
                 true
@@ -266,7 +266,7 @@ pub mod sistema {
     }
 
     impl Socio {
-        ///socio se instancia requiriendo todas sus variables como argumentos
+        ///Socio se instancia requiriendo todas sus variables como argumentos
         fn new(dni: u32, nombre: String, categoria: Categorias) -> Socio {
             Socio {
                 dni,
@@ -298,56 +298,56 @@ pub mod sistema {
 
     ///Categorias son las categorias de socio: A, B o C
     pub enum Categorias {
-        A(InfoCat),
-        B(InfoCat),
-        C(InfoCat),
+        A(InfoCategoria),
+        B(InfoCategoria),
+        C(InfoCategoria),
     }
 
     impl Default for Categorias {
         fn default() -> Self {
-            let info = InfoCat::default();
+            let info = InfoCategoria::default();
             Categorias::A(info)
         }
     }
 
-    /// InfoCat es la informacion relacionada a la categoria de socio, cuenta con el precio de la
+    /// InfoCategoria es la informacion relacionada a la categoria de socio, cuenta con el precio de la
     /// categoria y una lista con las actividades en las que puede participar el socio de esa categoria
     #[derive(scale::Decode, scale::Encode, PartialEq, Eq, Debug, Default)]
     #[cfg_attr(
         feature = "std",
         derive(scale_info::TypeInfo, ink::storage::traits::StorageLayout)
     )]
-    pub struct InfoCat {
+    pub struct InfoCategoria {
         precio_actual: u32,
         actividades: Vec<Actividades>,
     }
-    impl Clone for InfoCat {
+    impl Clone for InfoCategoria {
         fn clone(&self) -> Self {
             let precio_actual: u32 = self.precio_actual;
             let mut actividades = Vec::new();
             for i in &self.actividades {
                 actividades.push(i.clone());
             }
-            InfoCat {
+            InfoCategoria {
                 precio_actual,
                 actividades,
             }
         }
     }
-    ///InfoCat se instancia segun los argumentos dados, si es A o C no acepta opcion de Actividad, si es B, requiere opcion de Actividad
-    impl InfoCat {
+    ///InfoCategoria se instancia segun los argumentos dados, si es A o C no acepta opcion de Actividad, si es B, requiere opcion de Actividad
+    impl InfoCategoria {
         fn new(
             cat: String,
             sistema: &Sistema,
             actividad: Option<Actividades>,
-        ) -> Result<InfoCat, String> {
+        ) -> Result<InfoCategoria, String> {
             let error="Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string();
             if let Some(act) = actividad {
                 if cat.eq("B") || cat.eq("b") {
                     let mut actividades = Vec::new();
                     let precio_actual = sistema.precio_b;
                     actividades.push(act);
-                    let info = InfoCat {
+                    let info = InfoCategoria {
                         precio_actual,
                         actividades,
                     };
@@ -367,7 +367,7 @@ pub mod sistema {
                     actividades.push(Actividades::Natacion);
                     actividades.push(Actividades::Tenis);
                     actividades.push(Actividades::Paddle);
-                    let info = InfoCat {
+                    let info = InfoCategoria {
                         precio_actual,
                         actividades,
                     };
@@ -376,7 +376,7 @@ pub mod sistema {
                     let precio_actual = sistema.precio_c;
                     let mut actividades = Vec::<Actividades>::new();
                     actividades.push(Actividades::Gimnasio);
-                    let info = InfoCat {
+                    let info = InfoCategoria {
                         precio_actual,
                         actividades,
                     };
@@ -426,7 +426,7 @@ pub mod sistema {
         /// tiene los precios asociados a cada categoria, el porcentaje de descuento por pagos
         /// consecutivos y la cantidad de pagos consecutivos requeridos para acceder al descuento
         /// registroPagos, datosSocios, y staff se instancian como vectores vacios
-        /// owner se instancia con el address del caller
+        /// owner se instancia con el Some address del caller, el address del contrato report sigue como Null
         /// permisos privados se instancia siempre como true
         /// el resto de las variables son requeridas como argumentos
         #[ink(constructor)]
@@ -473,7 +473,7 @@ pub mod sistema {
                 permisos_privados,
             }
         }
-        ///set_owner para uso interno, se ejecuta solo al momento de instanciar el contrato, con el address del caller
+        ///Set_owner para uso interno, se ejecuta solo al momento de instanciar el contrato, con el address del caller
         fn set_owner(&mut self) {
             self.owner.id = Some(self.env().caller());
         }
@@ -490,7 +490,6 @@ pub mod sistema {
             }
         }
 
-        // #[allow(dead_code)]
         fn default() -> Sistema {
             let precio_a = 0;
             let precio_b = 0;
@@ -517,7 +516,7 @@ pub mod sistema {
         }
         ///Timestamp_into_date para uso interno, convierte un timestamp en una tupla con la fecha, formato aaaa/mm/dd
 
-        //check permisos se usa solo internamente, devuelve una tupla formada de la siguiente manera:
+        //Check permisos se usa solo internamente, devuelve una tupla formada de la siguiente manera:
         ///0 un enum con el nivel de permiso que posee el caller
         ///1 un String con el mensaje de permiso concedido
         ///2 un String con el mensaje de permiso denegado
@@ -597,7 +596,7 @@ pub mod sistema {
                 _ => Ok(self.porcentaje_descuento),
             }
         }
-        ///set_cantidad_pagos_consecutivos solo puede ser llamado por el owner, cambia la cantidad de pagos consecutivos requeridos para acceder al descuento
+        ///Solo puede ser llamado por el owner, cambia la cantidad de pagos consecutivos requeridos para acceder al descuento
         #[ink(message)]
         pub fn set_cantidad_pagos_consecutivos(
             &mut self,
@@ -750,7 +749,7 @@ pub mod sistema {
             match res.0 {
                 Permiso::Ninguno => Err(res.2),
                 _ => {
-                    let info: InfoCat;
+                    let info: InfoCategoria;
                     let mut categ = Categorias::default();
                     let socio: Socio;
                     let pago: Pago;
@@ -765,7 +764,7 @@ pub mod sistema {
                         }
                     }
                     if !esta {
-                        match InfoCat::new(cat.clone(), self, actividad) {
+                        match InfoCategoria::new(cat.clone(), self, actividad) {
                             Ok(a) => {
                                 info = a;
                                 res = Ok("Usuario agregado correctamente".to_string());
@@ -860,9 +859,9 @@ pub mod sistema {
                                 i.get_socio().dni,
                                 i.get_socio().nombre,
                                 match i.get_socio().categoria {
-                                    Categorias::A(_) => Categorias::A(InfoCat::default()),
-                                    Categorias::B(_) => Categorias::B(InfoCat::default()),
-                                    Categorias::C(_) => Categorias::C(InfoCat::default()),
+                                    Categorias::A(_) => Categorias::A(InfoCategoria::default()),
+                                    Categorias::B(_) => Categorias::B(InfoCategoria::default()),
+                                    Categorias::C(_) => Categorias::C(InfoCategoria::default()),
                                 },
                             );
                             if !vec.contains(&socio) {
@@ -883,11 +882,11 @@ pub mod sistema {
             let hoy = self.get_timestamp();
             let cat: Categorias;
             if categoria.eq("A") {
-                cat = Categorias::A(InfoCat::default());
+                cat = Categorias::A(InfoCategoria::default());
             } else if categoria.eq("B") {
-                cat = Categorias::B(InfoCat::default());
+                cat = Categorias::B(InfoCategoria::default());
             } else {
-                cat = Categorias::C(InfoCat::default());
+                cat = Categorias::C(InfoCategoria::default());
             }
             match self.consulta_pagos(None) {
                 Ok(a) => {
@@ -1218,7 +1217,7 @@ pub mod sistema {
 
         #[ink::test]
         fn socio_clone_test() {
-            let info = InfoCat::default();
+            let info = InfoCategoria::default();
             let cat = Categorias::A(info);
             let socio = Socio::new(0, "".to_string(), cat);
             let s2 = socio.clone();
@@ -1226,7 +1225,7 @@ pub mod sistema {
         }
         #[ink::test]
         fn socio_clone_test2() {
-            let info = InfoCat::default();
+            let info = InfoCategoria::default();
             let cat = Categorias::B(info);
             let socio = Socio::new(0, "".to_string(), cat);
             let s2 = socio.clone();
@@ -1234,7 +1233,7 @@ pub mod sistema {
         }
         #[ink::test]
         fn socio_clone_test3() {
-            let info = InfoCat::default();
+            let info = InfoCategoria::default();
             let cat = Categorias::C(info);
             let socio = Socio::new(0, "".to_string(), cat);
             let s2 = socio.clone();
@@ -1267,60 +1266,61 @@ pub mod sistema {
         }
         #[ink::test]
         fn info_clone_test() {
-            let info = InfoCat::default();
+            let info = InfoCategoria::default();
             let i2 = info.clone();
             assert_eq!(info, i2)
         }
         #[ink::test]
-        fn new_infocat_test() {
+        fn new_InfoCategoria_test() {
             let sis = Sistema::default();
-            let res = InfoCat::new('a'.to_string(), &sis, Some(Actividades::default()));
+            let res = InfoCategoria::new('a'.to_string(), &sis, Some(Actividades::default()));
             assert!(res==Err("Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string()))
         }
         #[ink::test]
-        fn new_infocat_test1() {
+        fn new_InfoCategoria_test1() {
             let mut sis = Sistema::default();
             sis.precio_a = 30;
-            let info = InfoCat::new('a'.to_string(), &sis, None).unwrap();
+            let info = InfoCategoria::new('a'.to_string(), &sis, None).unwrap();
             assert!(info.precio_actual == sis.precio_a && info.actividades.len() == 8);
         }
         #[ink::test]
-        fn new_infocat_test2() {
+        fn new_InfoCategoria_test2() {
             let mut sis = Sistema::default();
             sis.precio_b = 30;
-            let info = InfoCat::new('b'.to_string(), &sis, Some(Actividades::default())).unwrap();
+            let info =
+                InfoCategoria::new('b'.to_string(), &sis, Some(Actividades::default())).unwrap();
             assert!(info.precio_actual == sis.precio_b && info.actividades.len() == 1);
         }
         #[ink::test]
-        fn new_infocat_test3() {
+        fn new_InfoCategoria_test3() {
             let sis = Sistema::default();
-            let res = InfoCat::new('b'.to_string(), &sis, None);
+            let res = InfoCategoria::new('b'.to_string(), &sis, None);
             assert!(res==Err("Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string()))
         }
         #[ink::test]
-        fn new_infocat_test4() {
+        fn new_InfoCategoria_test4() {
             let sis = Sistema::default();
-            let res = InfoCat::new('c'.to_string(), &sis, Some(Actividades::Hockey));
+            let res = InfoCategoria::new('c'.to_string(), &sis, Some(Actividades::Hockey));
             assert!(res==Err("Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string()));
         }
 
         #[ink::test]
-        fn new_infocat_test5() {
+        fn new_InfoCategoria_test5() {
             let mut sis = Sistema::default();
             sis.precio_a = 30;
-            let info = InfoCat::new('c'.to_string(), &sis, None).unwrap();
+            let info = InfoCategoria::new('c'.to_string(), &sis, None).unwrap();
             assert!(info.precio_actual == sis.precio_c && info.actividades.len() == 1);
         }
         #[ink::test]
-        fn new_infocat_test6() {
+        fn new_InfoCategoria_test6() {
             let sis = Sistema::default();
-            let res = InfoCat::new('h'.to_string(), &sis, Some(Actividades::Futbol));
+            let res = InfoCategoria::new('h'.to_string(), &sis, Some(Actividades::Futbol));
             assert!(res==Err("Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string()))
         }
         #[ink::test]
-        fn new_infocat_test7() {
+        fn new_InfoCategoria_test7() {
             let sis = Sistema::default();
-            let res = InfoCat::new('z'.to_string(), &sis, None);
+            let res = InfoCategoria::new('z'.to_string(), &sis, None);
             assert!(res==Err("Las entradas validas son A y C sin opcion de actividad, y B con opcion de actividad".to_string()))
         }
         #[ink::test]
